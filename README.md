@@ -2,6 +2,15 @@
 
 Web app sencilla basada en el PDF del taller para simular tiros penales con una Máquina de Estado Finito en un esquema cliente-servidor.
 
+<!-- JhonJara Modificacion -->
+## Integrantes
+
+- Juan Pablo Gomez Ramirez - `juangomez311453@correo.itm.edu.co`
+- Miguel Angel Garcia Perez - `miguelgarcia323268@correo.itm.edu.co`
+- Jhon Dayron Jaramillo Laurens - `jhonjaramillo120326@correo.itm.edu.co`
+- Mauricio Agudelo Jiménez - `mauricioagudelo288237@correo.itm.edu.co`
+<!-- Fin de Modificacion -->
+
 ## Qué incluye
 
 - Servidor Node.js que sirve la interfaz web y mantiene el estado del juego.
