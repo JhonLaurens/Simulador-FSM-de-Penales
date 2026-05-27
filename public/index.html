@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FSM Penales</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-role="goalkeeper">
+    <!-- JhonJara Modificacion -->
+    <div class="stadium-bg" aria-hidden="true">
+      <div class="stadium-lights"></div>
+      <div class="pitch-lines"></div>
+    </div>
+
+    <div class="page-shell">
+      <header class="game-header">
+        <div class="game-title">
+          <span class="title-eyebrow">Matemáticas · FSM</span>
+          <h1>Penales <span class="title-accent">FSM</span></h1>
+          <p class="title-role" id="active-role">Cargando rol...</p>
+        </div>
+
+        <div class="header-meta">
+          <div class="server-info">
+            <span>Servidor <strong id="server-host">...</strong></span>
+            <span>Red <strong id="server-ips">...</strong></span>
+            <span>Sesión <strong id="default-session">penales-demo</strong></span>
+            <span>Puertos <strong id="role-ports">5000/5001</strong></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="role-panel goalkeeper-panel" data-role-panel="goalkeeper">
+          <div class="step-card" data-step="1">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="panel-head">
+                <div>
+                  <p class="panel-kicker">El guardián del arco</p>
+                  <h2>Configurar Portero</h2>
+                </div>
+                <div class="connection-display">
+                  <span class="conn-dot" id="conn-dot-gk"></span>
+                  <span id="goalkeeper-connection" class="badge">Desconectado</span>
+                </div>
+              </div>
+
+              <div class="controls">
+                <label>
+                  <span>Equipo</span>
+                  <input id="goalkeeper-team" type="text" value="Equipo Local" maxlength="40" />
+                </label>
+                <label>
+                  <span>Sesión</span>
+                  <input id="goalkeeper-session" type="text" value="penales-demo" maxlength="30" />
+                </label>
+                <button id="goalkeeper-connect" class="btn btn-primary" type="button">
+                  <span class="btn-icon">Conectar</span> Portero
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <details class="instructions-panel" open>
+            <summary>¿Cómo jugar como Portero?</summary>
+            <ol class="instructions-list">
+              <li>Conecta el portero con tu sesión y equipo.</li>
+              <li>En el tablero 4×8, haz click en exactamente <strong>12 celdas</strong>.</li>
+              <li>Pulsa <strong>Configurar Portero</strong> para bloquear tu estrategia secreta.</li>
+              <li>Cada celda cubierta que reciba un tiro será una <span class="text-save">TAPADA</span>.</li>
+              <li>Ganas si el pateador no alcanza 3 goles en 5 tiros.</li>
+            </ol>
+            <div class="fsm-mini-legend">
+              <strong>FSM:</strong> q0 sin configurar → q1 sin goles → q2 un gol → q3 dos goles → q4 tres goles → q5 fin
+            </div>
+          </details>
+
+          <div class="board-section step-card" data-step="2">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="board-header">
+                <div class="board-title">
+                  <h3>Portería — selecciona tu cobertura</h3>
+                  <p class="board-hint">Marca o desmarca posiciones defensivas en la red.</p>
+                </div>
+                <div class="coverage-counter">
+                  <span class="counter-ring" id="goalkeeper-count">0 / 12</span>
+                  <span class="meta-label">posiciones</span>
+                </div>
+              </div>
+
+              <div id="goalkeeper-board" class="board-shell goal-net"></div>
+
+              <div class="board-actions">
+                <button id="goalkeeper-clear" class="btn btn-ghost" type="button">Limpiar</button>
+                <button id="goalkeeper-configure" class="btn btn-primary" type="button">
+                  Configurar Portero
+                </button>
+                <button id="goalkeeper-reset" class="btn btn-secondary" type="button">
+                  Reiniciar Partida
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="scoreboard">
+            <div class="score-main">
+              <div class="score-block">
+                <span class="score-label">Goles concedidos</span>
+                <strong class="score-number goal-color" id="goalkeeper-goals">0</strong>
+              </div>
+              <div class="score-divider">/</div>
+              <div class="score-block">
+                <span class="score-label">Tapadas</span>
+                <strong class="score-number save-color" id="goalkeeper-saves">0</strong>
+              </div>
+              <div class="score-divider">·</div>
+              <div class="score-block">
+                <span class="score-label">Tiros</span>
+                <strong class="score-number" id="goalkeeper-shots">0/5</strong>
+              </div>
+            </div>
+            <div class="score-meta">
+              <span>Equipo: <strong id="goalkeeper-team-live">-</strong></span>
+              <span>Terminal: <strong id="goalkeeper-terminal">En espera</strong></span>
+            </div>
+          </div>
+
+          <div class="fsm-diagram" data-fsm-prefix="gk">
+            <h3>Máquina de Estado Finito</h3>
+            <div class="fsm-track">
+              <div class="fsm-node" data-state="q0" id="gk-node-q0">q0<span>Sin config</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q1" id="gk-node-q1">q1<span>0 goles</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q2" id="gk-node-q2">q2<span>1 gol</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q3" id="gk-node-q3">q3<span>2 goles</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q4" id="gk-node-q4">q4<span>3 goles</span></div>
+              <div class="fsm-arrow terminal-arrow">→</div>
+              <div class="fsm-node terminal-node" data-state="q5" id="gk-node-q5">q5<span>Fin</span></div>
+            </div>
+            <p class="fsm-current">
+              Estado actual: <strong id="goalkeeper-state">q0</strong> | Progreso:
+              <strong id="goalkeeper-progress">q0</strong>
+            </p>
+          </div>
+
+          <div class="log-panel">
+            <div class="log-header">
+              <h3>Registro del Servidor</h3>
+              <p>Últimos eventos del FSM</p>
+            </div>
+            <ul id="goalkeeper-log" class="log-list"></ul>
+          </div>
+        </section>
+
+        <section class="role-panel shooter-panel" data-role-panel="shooter">
+          <div class="step-card" data-step="1">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="panel-head">
+                <div>
+                  <p class="panel-kicker">El ejecutor del penal</p>
+                  <h2>Conectar Pateador</h2>
+                </div>
+                <div class="connection-display">
+                  <span class="conn-dot" id="conn-dot-sh"></span>
+                  <span id="shooter-connection" class="badge">Desconectado</span>
+                </div>
+              </div>
+
+              <div class="controls">
+                <label>
+                  <span>Sesión</span>
+                  <input id="shooter-session" type="text" value="penales-demo" maxlength="30" />
+                </label>
+                <label>
+                  <span>Coordenada del tiro</span>
+                  <input id="shooter-input" type="text" placeholder="ej: B4 o AA" maxlength="4" />
+                </label>
+                <button id="shooter-connect" class="btn btn-primary" type="button">
+                  <span class="btn-icon">Conectar</span> Pateador
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <details class="instructions-panel" open>
+            <summary>¿Cómo jugar como Pateador?</summary>
+            <ol class="instructions-list">
+              <li>Conecta el pateador con la misma sesión que usó el portero.</li>
+              <li>Espera a que el portero configure su cobertura de 12 posiciones.</li>
+              <li>Escribe una coordenada A1...D8 o haz click en una celda.</li>
+              <li>Pulsa <strong>Enviar Tiro</strong> o presiona <kbd>Enter</kbd>.</li>
+              <li>Necesitas <strong>3 goles en 5 tiros</strong> para ganar.</li>
+              <li>Pruebas: <code>AA</code>, <code>BB</code>, <code>CC</code> → <strong>201:OK</strong></li>
+            </ol>
+            <table class="codes-table">
+              <tr><td><strong>202:GOL</strong></td><td>La pelota entró</td></tr>
+              <tr><td><strong>200:TAPO</strong></td><td>El portero cubrió</td></tr>
+              <tr><td><strong>404:INVALIDO</strong></td><td>Coordenada fuera de rango</td></tr>
+              <tr><td><strong>409:REPETIDO</strong></td><td>Ya tiraste ahí</td></tr>
+              <tr><td><strong>412:NO_LISTO</strong></td><td>El portero no se configuró</td></tr>
+            </table>
+          </details>
+
+          <div class="shot-result-card" id="shooter-response">
+            <span class="result-icon" id="result-icon">⚽</span>
+            <span class="result-text">Última respuesta: sin actividad todavía.</span>
+          </div>
+
+          <div class="shoot-action">
+            <button id="shooter-send" class="btn btn-primary btn-shoot" type="button">
+              Enviar Tiro
+            </button>
+          </div>
+
+          <div class="board-section step-card" data-step="2">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="board-header">
+                <div class="board-title">
+                  <h3>Elige dónde tirar</h3>
+                  <p class="board-hint">Cada click ejecuta un penal directo al servidor.</p>
+                </div>
+                <div class="progress-pills">
+                  <span class="pill tiros" id="shooter-shot-count">0 / 5 tiros</span>
+                  <span class="pill goles" id="shooter-goal-count">0 / 3 goles</span>
+                </div>
+              </div>
+              <div id="shooter-board" class="board-shell goal-net"></div>
+            </div>
+          </div>
+
+          <div class="scoreboard">
+            <div class="score-main">
+              <div class="score-block">
+                <span class="score-label">Goles</span>
+                <strong class="score-number goal-color" id="shooter-goals">0</strong>
+              </div>
+              <div class="score-divider">/</div>
+              <div class="score-block">
+                <span class="score-label">Tapadas</span>
+                <strong class="score-number save-color" id="shooter-saves">0</strong>
+              </div>
+            </div>
+            <div class="score-meta">
+              <span>Sesión: <strong id="shooter-session-live">-</strong></span>
+              <span>Resultado: <strong id="shooter-terminal">En espera</strong></span>
+            </div>
+          </div>
+
+          <div class="fsm-diagram" data-fsm-prefix="sh">
+            <h3>Máquina de Estado Finito</h3>
+            <div class="fsm-track">
+              <div class="fsm-node" data-state="q0" id="sh-node-q0">q0<span>Sin portero</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q1" id="sh-node-q1">q1<span>0 goles</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q2" id="sh-node-q2">q2<span>1 gol</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q3" id="sh-node-q3">q3<span>2 goles</span></div>
+              <div class="fsm-arrow">→</div>
+              <div class="fsm-node" data-state="q4" id="sh-node-q4">q4<span>3 goles</span></div>
+              <div class="fsm-arrow terminal-arrow">→</div>
+              <div class="fsm-node terminal-node" data-state="q5" id="sh-node-q5">q5<span>Fin</span></div>
+            </div>
+            <p class="fsm-current">
+              Estado: <strong id="shooter-state">q0</strong> | Progreso:
+              <strong id="shooter-progress">q0</strong>
+            </p>
+          </div>
+
+          <div class="log-panel">
+            <div class="log-header">
+              <h3>Historial de Tiros</h3>
+              <p>Impactos válidos enviados al servidor</p>
+            </div>
+            <ul id="shooter-history" class="log-list"></ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="game-over-overlay" id="game-over-overlay" hidden>
+      <div class="game-over-card">
+        <div class="game-over-icon" id="game-over-icon">🏆</div>
+        <h2 id="game-over-title">¡Juego Terminado!</h2>
+        <p id="game-over-reason"></p>
+        <div class="game-over-stats" id="game-over-stats"></div>
+        <!-- JhonJara Modificacion -->
+        <button class="btn btn-primary game-over-close" id="game-over-close" type="button">
+          Cerrar Resultado
+        </button>
+        <!-- Fin de Modificacion -->
+      </div>
+    </div>
+    <!-- Codigo Anterior Modificado: estructura HTML previa con hero beige y paneles dashboard -->
+    <!-- Fin de Modificacion -->
+
+    <script src="/app.js"></script>
+  </body>
+</html>

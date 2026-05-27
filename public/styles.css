@@ -1,0 +1,995 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap");
+
+:root {
+  --bg-base: #0a0e1a;
+  --bg-surface: rgba(17, 24, 39, 0.88);
+  --bg-card: rgba(26, 34, 53, 0.92);
+  --border: rgba(255, 255, 255, 0.07);
+  --text: #e8edf5;
+  --text-muted: #6b7a99;
+  --gk-primary: #00e676;
+  --gk-dark: #00c853;
+  --gk-glow: 0 0 24px rgba(0, 230, 118, 0.35);
+  --sh-primary: #ff6d00;
+  --sh-dark: #e65100;
+  --sh-glow: 0 0 24px rgba(255, 109, 0, 0.4);
+  --goal-color: #ff3d3d;
+  --goal-glow: 0 0 20px rgba(255, 61, 61, 0.5);
+  --save-color: #00bcd4;
+  --save-glow: 0 0 20px rgba(0, 188, 212, 0.5);
+  --state-q0: #455a64;
+  --state-active: #ffd600;
+  --state-done: #00e676;
+  --state-final: #ff3d3d;
+  --role-primary: var(--gk-primary);
+  --role-dark: var(--gk-dark);
+  --role-glow: var(--gk-glow);
+}
+
+body[data-role="goalkeeper"] {
+  --role-primary: var(--gk-primary);
+  --role-dark: var(--gk-dark);
+  --role-glow: var(--gk-glow);
+}
+
+body[data-role="shooter"] {
+  --role-primary: var(--sh-primary);
+  --role-dark: var(--sh-dark);
+  --role-glow: var(--sh-glow);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg-base);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg-base);
+}
+
+button,
+input,
+summary {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.stadium-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 80% 4%, rgba(255, 255, 255, 0.12), transparent 20%),
+    radial-gradient(circle at 50% 100%, rgba(0, 230, 118, 0.11), transparent 30%),
+    linear-gradient(180deg, #0a0e1a 0%, #101827 54%, #07101a 100%);
+}
+
+.stadium-bg::before,
+.stadium-bg::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+}
+
+.stadium-bg::before {
+  background:
+    linear-gradient(64deg, transparent 44%, rgba(255, 255, 255, 0.05) 50%, transparent 56%),
+    linear-gradient(116deg, transparent 44%, rgba(255, 255, 255, 0.04) 50%, transparent 56%);
+  filter: blur(1px);
+}
+
+.stadium-bg::after {
+  background-image:
+    linear-gradient(25deg, transparent 47%, rgba(255, 255, 255, 0.05) 48%, transparent 49%),
+    linear-gradient(155deg, transparent 47%, rgba(255, 255, 255, 0.04) 48%, transparent 49%);
+  opacity: 0.5;
+}
+
+.stadium-lights {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(232, 237, 245, 0.35), transparent 8%),
+    radial-gradient(circle at 88% 10%, rgba(232, 237, 245, 0.32), transparent 8%);
+  opacity: 0.85;
+}
+
+.pitch-lines {
+  position: absolute;
+  inset: auto -15% -8% -15%;
+  height: 34%;
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(255, 255, 255, 0.08) 50%, transparent 50.3%),
+    linear-gradient(0deg, transparent 18%, rgba(255, 255, 255, 0.07) 18.4%, transparent 18.8%),
+    radial-gradient(ellipse at center, transparent 42%, rgba(255, 255, 255, 0.08) 43%, transparent 44%);
+  transform: perspective(480px) rotateX(58deg);
+}
+
+.page-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 18px 0 42px;
+}
+
+.game-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 0 0 24px 24px;
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+
+.title-eyebrow,
+.panel-kicker,
+.score-label,
+.meta-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.game-title h1 {
+  margin: 3px 0 0;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+}
+
+.title-accent,
+.title-role,
+.text-save {
+  color: var(--role-primary);
+  text-shadow: var(--role-glow);
+}
+
+.title-role {
+  margin: 8px 0 0;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.header-meta {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.server-info {
+  display: flex;
+  max-width: 560px;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.server-info span {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.server-info strong {
+  color: var(--text);
+}
+
+.layout {
+  display: grid;
+  gap: 22px;
+}
+
+/* JhonJara Modificacion */
+body[data-role="goalkeeper"] [data-role-panel="shooter"],
+body[data-role="shooter"] [data-role-panel="goalkeeper"] {
+  display: none;
+}
+/* Fin de Modificacion */
+
+.role-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.step-card,
+.instructions-panel,
+.scoreboard,
+.fsm-diagram,
+.log-panel,
+.shot-result-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 16px;
+  padding: 24px;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.step-card:hover {
+  border-color: color-mix(in srgb, var(--role-primary) 52%, transparent);
+  box-shadow: var(--role-glow), 0 18px 50px rgba(0, 0, 0, 0.32);
+  transform: translateY(-2px);
+}
+
+.step-number {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--role-primary);
+  color: #03100b;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: var(--role-glow);
+}
+
+.step-content {
+  min-width: 0;
+}
+
+.panel-head,
+.board-header,
+.board-actions,
+.controls,
+.score-main,
+.score-meta,
+.log-header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-head h2,
+.board-title h3,
+.fsm-diagram h3,
+.log-header h3 {
+  margin: 0;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.connection-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.conn-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.connection-display:has(.badge.is-live) .conn-dot {
+  background: var(--role-primary);
+  box-shadow: var(--role-glow);
+  animation: connectPulse 2s infinite;
+}
+
+.badge {
+  color: var(--text-muted);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.badge.is-live {
+  color: var(--role-primary);
+}
+
+.controls {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+label {
+  flex: 1 1 190px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+label span {
+  display: block;
+  margin-bottom: 7px;
+}
+
+input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input:focus {
+  border-color: var(--role-primary);
+  box-shadow: var(--role-glow);
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--role-primary), var(--role-dark));
+  color: #07100c;
+}
+
+.btn-secondary {
+  border: 1px solid var(--role-primary);
+  background: transparent;
+  color: var(--role-primary);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.btn-shoot {
+  width: 100%;
+  padding: 16px 40px;
+  font-size: 1.22rem;
+}
+
+.btn:hover {
+  box-shadow: var(--role-glow);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.instructions-panel {
+  overflow: hidden;
+}
+
+.instructions-panel summary {
+  cursor: pointer;
+  padding: 16px 20px;
+  color: var(--role-primary);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.instructions-list,
+.fsm-mini-legend,
+.codes-table {
+  margin: 0 20px 20px;
+}
+
+.instructions-list {
+  display: grid;
+  gap: 8px;
+  padding-left: 22px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.fsm-mini-legend {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+}
+
+.codes-table {
+  width: calc(100% - 40px);
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 12px;
+  color: var(--text);
+}
+
+.codes-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.codes-table tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+kbd,
+code {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--role-primary);
+}
+
+.board-section {
+  overflow: hidden;
+}
+
+.board-title p,
+.board-hint,
+.log-header p,
+.fsm-current,
+.score-meta {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.coverage-counter,
+.progress-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.coverage-counter {
+  flex-direction: column;
+  align-items: center;
+}
+
+.counter-ring {
+  display: grid;
+  width: 80px;
+  height: 80px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--bg-card) 55%, transparent 56%),
+    conic-gradient(var(--role-primary) var(--coverage-progress, 0%), rgba(255, 255, 255, 0.09) 0);
+  color: var(--text);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.35);
+}
+
+.pill {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-weight: 700;
+}
+
+.pill.goles {
+  color: var(--goal-color);
+}
+
+.goal-net {
+  position: relative;
+  isolation: isolate;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 46px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+  box-shadow: inset 0 0 42px rgba(255, 255, 255, 0.03);
+}
+
+.board-shell {
+  display: grid;
+  grid-template-columns: 42px repeat(8, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.board-axis,
+.board-corner {
+  display: grid;
+  min-height: 42px;
+  place-items: center;
+  color: var(--text-muted);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-weight: 700;
+}
+
+.board-cell {
+  position: relative;
+  display: grid;
+  min-height: 52px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  cursor: default;
+  font-size: 1.2rem;
+  font-weight: 800;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.board-cell.is-interactive {
+  cursor: pointer;
+}
+
+.board-cell.is-interactive:hover {
+  animation: cellPulse 900ms ease-in-out infinite;
+  border-color: var(--role-primary);
+  box-shadow: var(--role-glow);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.board-cell[data-mark="P"] {
+  border-color: var(--gk-primary);
+  background: rgba(0, 230, 118, 0.2);
+  box-shadow: var(--gk-glow);
+}
+
+.board-cell[data-mark="G"] {
+  border-color: var(--goal-color);
+  background: rgba(255, 61, 61, 0.25);
+  color: var(--goal-color);
+  box-shadow: var(--goal-glow);
+  animation: goalFlash 650ms ease-out;
+}
+
+.board-cell[data-mark="T"] {
+  border-color: var(--save-color);
+  background: rgba(0, 188, 212, 0.2);
+  color: var(--save-color);
+  box-shadow: var(--save-glow);
+}
+
+.board-cell[data-mark="T"]::after {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border: 1px solid var(--save-color);
+  border-radius: 50%;
+  animation: saveRipple 900ms ease-out;
+}
+
+.board-actions,
+.shoot-action {
+  margin-top: 16px;
+}
+
+.scoreboard {
+  padding: 20px;
+  border-color: color-mix(in srgb, var(--role-primary) 54%, transparent);
+}
+
+.score-main {
+  justify-content: center;
+}
+
+.score-block {
+  min-width: 120px;
+  text-align: center;
+}
+
+.score-number {
+  display: block;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+.goal-color {
+  color: var(--goal-color);
+  text-shadow: var(--goal-glow);
+}
+
+.save-color {
+  color: var(--save-color);
+  text-shadow: var(--save-glow);
+}
+
+.score-divider {
+  color: var(--text-muted);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+}
+
+.score-meta {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.score-meta strong {
+  color: var(--text);
+}
+
+.fsm-diagram,
+.log-panel {
+  padding: 20px;
+  background: var(--bg-card);
+}
+
+.fsm-track {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.fsm-node {
+  display: grid;
+  min-width: 68px;
+  height: 68px;
+  place-items: center;
+  flex-shrink: 0;
+  border: 2px solid var(--state-q0);
+  border-radius: 50%;
+  color: var(--text);
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.fsm-node span {
+  display: block;
+  max-width: 56px;
+  color: var(--text-muted);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 500;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.fsm-node.past {
+  border-color: var(--state-done);
+  opacity: 0.72;
+}
+
+.fsm-node.active {
+  border-color: var(--state-active);
+  box-shadow: 0 0 12px var(--state-active);
+  animation: fsmProgress 700ms ease-out;
+}
+
+.fsm-node.terminal-node.active {
+  border-color: var(--state-final);
+  box-shadow: 0 0 16px var(--state-final);
+}
+
+.fsm-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+.shot-result-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  font-weight: 700;
+}
+
+.result-icon {
+  font-size: 2rem;
+}
+
+.result-text {
+  line-height: 1.45;
+}
+
+.shot-result-card.is-goal {
+  border-color: var(--goal-color);
+  background: rgba(255, 61, 61, 0.1);
+  box-shadow: var(--goal-glow);
+  animation: goalFlash 600ms ease-out;
+}
+
+.shot-result-card.is-save {
+  border-color: var(--save-color);
+  background: rgba(0, 188, 212, 0.1);
+  box-shadow: var(--save-glow);
+}
+
+.log-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.log-list li {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.log-time {
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--role-primary);
+  font-weight: 700;
+}
+
+.log-list li[data-kind="goal"] .log-time {
+  color: var(--goal-color);
+}
+
+.log-list li[data-kind="save"] .log-time {
+  color: var(--save-color);
+}
+
+.log-list li[data-kind="error"] .log-time {
+  color: #ff9800;
+}
+
+.game-over-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.game-over-overlay[hidden] {
+  display: none;
+}
+
+.game-over-card {
+  width: min(480px, 100%);
+  padding: 40px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--bg-surface);
+  text-align: center;
+  animation: victoryBurst 400ms ease-out;
+}
+
+.game-over-icon {
+  font-size: 5rem;
+}
+
+.game-over-card h2 {
+  margin: 12px 0 8px;
+  font-family: "Rajdhani", "Segoe UI", sans-serif;
+  font-size: clamp(2rem, 7vw, 3rem);
+}
+
+.game-over-card p,
+.game-over-stats {
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.game-over-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.game-over-stats span {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* JhonJara Modificacion */
+.game-over-close {
+  width: 100%;
+  margin-top: 22px;
+}
+/* Fin de Modificacion */
+
+@keyframes connectPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes goalFlash {
+  0% {
+    box-shadow: 0 0 0 rgba(255, 61, 61, 0);
+  }
+  45% {
+    box-shadow: var(--goal-glow), 0 0 60px rgba(255, 61, 61, 0.22);
+  }
+  100% {
+    box-shadow: var(--goal-glow);
+  }
+}
+
+@keyframes saveRipple {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@keyframes cellPulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.35);
+  }
+}
+
+@keyframes fsmProgress {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes victoryBurst {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .page-shell {
+    width: min(100% - 24px, 1180px);
+    padding-top: 10px;
+  }
+
+  .game-header {
+    grid-template-columns: 1fr;
+    position: relative;
+    border-radius: 20px;
+  }
+
+  .header-meta,
+  .server-info {
+    justify-items: start;
+    justify-content: flex-start;
+  }
+
+  .step-card {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 18px;
+  }
+
+  .panel-head,
+  .board-header,
+  .score-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .score-main {
+    align-items: center;
+  }
+
+  .score-divider {
+    display: none;
+  }
+
+  .fsm-track {
+    overflow-x: scroll;
+  }
+}
+
+@media (max-width: 480px) {
+  .step-card {
+    grid-template-columns: 1fr;
+  }
+
+  .step-number {
+    display: none;
+  }
+
+  .board-shell {
+    grid-template-columns: 28px repeat(8, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .board-axis,
+  .board-corner,
+  .board-cell {
+    min-height: 32px;
+    border-radius: 9px;
+    font-size: 0.82rem;
+  }
+
+  .goal-net {
+    padding: 10px;
+  }
+
+  .game-over-card {
+    padding: 28px 20px;
+  }
+}
