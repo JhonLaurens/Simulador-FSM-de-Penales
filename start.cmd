@@ -6,6 +6,10 @@ rem JhonJara Modificacion
 title FSM Penales - Presentacion Final
 if "%GOALKEEPER_PORT%"=="" set "GOALKEEPER_PORT=5000"
 if "%SHOOTER_PORT%"=="" set "SHOOTER_PORT=5001"
+if "%RIVAL_HOST%"=="" set "RIVAL_HOST=localhost"
+if "%RIVAL_PORT%"=="" set "RIVAL_PORT=%GOALKEEPER_PORT%"
+if "%FSM_MODE%"=="" set "FSM_MODE=%~1"
+if "%FSM_MODE%"=="" set "FSM_MODE=both"
 set "NODE_EXE=node"
 set "LAN_IP=localhost"
 
@@ -19,12 +23,26 @@ echo ==========================================
 echo  FSM Penales - Matematica Informatica Av.
 echo ==========================================
 echo.
-echo Portero FSM: http://localhost:%GOALKEEPER_PORT%
-echo Pateador FSM: http://localhost:%SHOOTER_PORT%
+echo Modo solicitado: %FSM_MODE%
+if /I "%FSM_MODE%"=="portero" (
+  echo Portero FSM: http://localhost:%GOALKEEPER_PORT%
+) else if /I "%FSM_MODE%"=="pateador" (
+  echo Pateador FSM: http://localhost:%SHOOTER_PORT%
+  echo Rival por defecto: %RIVAL_HOST%:%RIVAL_PORT%
+) else (
+  echo Portero FSM: http://localhost:%GOALKEEPER_PORT%
+  echo Pateador FSM: http://localhost:%SHOOTER_PORT%
+)
 echo.
 echo Links para usar desde otras maquinas de la misma red:
-echo Portero FSM: http://%LAN_IP%:%GOALKEEPER_PORT%
-echo Pateador FSM: http://%LAN_IP%:%SHOOTER_PORT%
+if /I "%FSM_MODE%"=="portero" (
+  echo Portero FSM: http://%LAN_IP%:%GOALKEEPER_PORT%
+) else if /I "%FSM_MODE%"=="pateador" (
+  echo Pateador FSM local: http://%LAN_IP%:%SHOOTER_PORT%
+) else (
+  echo Portero FSM: http://%LAN_IP%:%GOALKEEPER_PORT%
+  echo Pateador FSM: http://%LAN_IP%:%SHOOTER_PORT%
+)
 echo.
 
 "%NODE_EXE%" --version >nul 2>&1
@@ -65,16 +83,32 @@ echo.
 rem Fin de Modificacion
 
 echo Abriendo navegadores para la sustentacion...
-start "" "http://localhost:%GOALKEEPER_PORT%"
-start "" "http://localhost:%SHOOTER_PORT%"
+if /I "%FSM_MODE%"=="portero" (
+  start "" "http://localhost:%GOALKEEPER_PORT%"
+) else if /I "%FSM_MODE%"=="pateador" (
+  start "" "http://localhost:%SHOOTER_PORT%"
+) else (
+  start "" "http://localhost:%GOALKEEPER_PORT%"
+  start "" "http://localhost:%SHOOTER_PORT%"
+)
 echo.
 echo Servidor iniciado. No cierre esta ventana durante la presentacion.
-echo Entregue estos links a los otros equipos de la misma red:
-echo Portero FSM: http://%LAN_IP%:%GOALKEEPER_PORT%
-echo Pateador FSM: http://%LAN_IP%:%SHOOTER_PORT%
+echo Uso recomendado segun la rubrica:
+echo   start.cmd portero   ^> Servidor de Defensa en puerto %GOALKEEPER_PORT%
+echo   start.cmd pateador  ^> Cliente de Ataque en puerto %SHOOTER_PORT%
+if /I "%FSM_MODE%"=="portero" (
+  echo Entregue este link/IP al equipo atacante:
+  echo Portero FSM: http://%LAN_IP%:%GOALKEEPER_PORT%
+) else if /I "%FSM_MODE%"=="pateador" (
+  echo Ingrese en la pantalla la IP y puerto del Portero rival.
+) else (
+  echo Entregue estos links a los otros equipos de la misma red:
+  echo Portero FSM: http://%LAN_IP%:%GOALKEEPER_PORT%
+  echo Pateador FSM: http://%LAN_IP%:%SHOOTER_PORT%
+)
 echo Para detener: Ctrl+C y luego S.
 echo.
-"%NODE_EXE%" server.js
+"%NODE_EXE%" server.js %FSM_MODE%
 echo.
 echo El servidor se detuvo.
 pause

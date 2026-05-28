@@ -178,6 +178,16 @@
                   <span>Sesión</span>
                   <input id="shooter-session" type="text" value="penales-demo" maxlength="30" />
                 </label>
+                <!-- JhonJara Modificacion -->
+                <label>
+                  <span>IP rival</span>
+                  <input id="rival-host" type="text" value="localhost" placeholder="ej: 192.168.1.25" maxlength="80" />
+                </label>
+                <label>
+                  <span>Puerto rival</span>
+                  <input id="rival-port" type="number" value="5000" min="1" max="65535" />
+                </label>
+                <!-- Fin de Modificacion -->
                 <label>
                   <span>Coordenada del tiro</span>
                   <input id="shooter-input" type="text" placeholder="ej: B4 o AA" maxlength="4" />
@@ -192,7 +202,11 @@
           <details class="instructions-panel" open>
             <summary>¿Cómo jugar como Pateador?</summary>
             <ol class="instructions-list">
+              <!-- JhonJara Modificacion -->
+              <li>Ingresa la IP y puerto del Portero FSM rival; para pruebas locales usa <code>localhost:5000</code>.</li>
               <li>Conecta el pateador con la misma sesión que usó el portero.</li>
+              <!-- Codigo Anterior Modificado: <li>Conecta el pateador con la misma sesión que usó el portero.</li> -->
+              <!-- Fin de Modificacion -->
               <li>Espera a que el portero configure su cobertura de 12 posiciones.</li>
               <li>Escribe una coordenada A1...D8 o haz click en una celda.</li>
               <li>Pulsa <strong>Enviar Tiro</strong> o presiona <kbd>Enter</kbd>.</li>

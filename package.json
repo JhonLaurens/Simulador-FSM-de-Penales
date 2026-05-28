@@ -4,7 +4,9 @@
   "description": "Web app sencilla para el proyecto FSM Penales",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "portero": "node server.js portero",
+    "pateador": "node server.js pateador"
   },
   "keywords": [
     "fsm",

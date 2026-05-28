@@ -17,6 +17,9 @@ const COLS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 const SHOT_LIMIT = 5;
 const GOAL_LIMIT = 3;
 const DEFAULT_SESSION = "penales-demo";
+// JhonJara Modificacion
+const APP_ROLE = normalizeAppRole(process.env.FSM_ROLE || process.argv[2] || "both");
+// Fin de Modificacion
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -67,6 +70,34 @@ function normalizeSessionId(value) {
     .replace(/[^a-z0-9-_]/g, "-")
     .slice(0, 30) || DEFAULT_SESSION;
 }
+
+// JhonJara Modificacion
+function normalizeAppRole(value) {
+  const role = String(value || "both").trim().toLowerCase();
+
+  if (["portero", "goalkeeper", "defense", "server"].includes(role)) {
+    return "goalkeeper";
+  }
+
+  if (["pateador", "shooter", "attack", "client"].includes(role)) {
+    return "shooter";
+  }
+
+  return "both";
+}
+
+function getEnabledRoles() {
+  if (APP_ROLE === "goalkeeper") {
+    return ["goalkeeper"];
+  }
+
+  if (APP_ROLE === "shooter") {
+    return ["shooter"];
+  }
+
+  return ["goalkeeper", "shooter"];
+}
+// Fin de Modificacion
 
 function normalizeInput(value) {
   return String(value || "").trim().toUpperCase();
@@ -173,6 +204,14 @@ function sendMessage(socket, payload) {
     socket.send(JSON.stringify(payload));
   }
 }
+
+// JhonJara Modificacion
+function sendPlainMessage(socket, message) {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(message);
+  }
+}
+// Fin de Modificacion
 
 function sendSnapshot(session) {
   const payload = {
@@ -413,6 +452,16 @@ function handleShooterMessage(socket, payload) {
 }
 
 // JhonJara Modificacion
+function handleSimpleProtocolMessage(socket, text) {
+  const session = getSession(socket.meta?.sessionId || DEFAULT_SESSION);
+  const response = processShot(session, text);
+
+  sendPlainMessage(socket, `${response.code}:${response.label}`);
+  sendSnapshot(session);
+}
+// Fin de Modificacion
+
+// JhonJara Modificacion
 function getBootstrapData(role, port) {
 // Codigo Anterior Modificado: function getBootstrapData() {
 // Fin de Modificacion
@@ -433,6 +482,9 @@ function getBootstrapData(role, port) {
     role,
     port,
     ports: ROLE_PORTS,
+    appRole: APP_ROLE,
+    rivalHost: process.env.RIVAL_HOST || "localhost",
+    rivalPort: Number(process.env.RIVAL_PORT || ROLE_PORTS.goalkeeper),
     // Codigo Anterior Modificado: port: PORT,
     // Fin de Modificacion
     addresses: [...new Set(addresses)],
@@ -504,19 +556,27 @@ const wss = new WebSocketServer({ noServer: true });
 // Fin de Modificacion
 
 wss.on("connection", (socket) => {
-  sendMessage(socket, {
-    type: "hello",
-    message: "Conexión WebSocket lista.",
-  });
+  // JhonJara Modificacion
+  // The first response must be the FSM code when another team's simple client sends raw text.
+  // Codigo Anterior Modificado:
+  // sendMessage(socket, {
+  //   type: "hello",
+  //   message: "Conexión WebSocket lista.",
+  // });
+  // Fin de Modificacion
 
   socket.on("message", (raw) => {
     const text = raw.toString();
     const payload = safeParseJson(text);
 
     if (!payload) {
-      if (socket.meta?.role === "shooter") {
-        handleShooterMessage(socket, { type: "shoot", input: text });
-      }
+      // JhonJara Modificacion
+      handleSimpleProtocolMessage(socket, text);
+      // Codigo Anterior Modificado:
+      // if (socket.meta?.role === "shooter") {
+      //   handleShooterMessage(socket, { type: "shoot", input: text });
+      // }
+      // Fin de Modificacion
       return;
     }
 
@@ -558,15 +618,20 @@ function attachWebSocketUpgrade(server) {
   });
 }
 
-const uniquePorts = new Set(Object.values(ROLE_PORTS));
-if (uniquePorts.size !== Object.values(ROLE_PORTS).length) {
+const enabledRoles = getEnabledRoles();
+const enabledPorts = enabledRoles.map((role) => ROLE_PORTS[role]);
+const uniquePorts = new Set(enabledPorts);
+if (uniquePorts.size !== enabledPorts.length) {
   console.error("GOALKEEPER_PORT y SHOOTER_PORT deben ser diferentes.");
   process.exit(1);
 }
 
-for (const [role, port] of Object.entries(ROLE_PORTS)) {
+for (const role of enabledRoles) {
+  const port = ROLE_PORTS[role];
   const roleServer = createRoleServer(role, port);
-  attachWebSocketUpgrade(roleServer);
+  if (role === "goalkeeper" || APP_ROLE === "both") {
+    attachWebSocketUpgrade(roleServer);
+  }
 
   // JhonJara Modificacion
   roleServer.on("error", (error) => {
@@ -590,6 +655,9 @@ for (const [role, port] of Object.entries(ROLE_PORTS)) {
 
     console.log(`${roleName} escuchando en http://localhost:${port}`);
     console.log(`IPs disponibles para ${roleName}: ${hosts}`);
+    if (role === "shooter") {
+      console.log(`Rival por defecto: ${bootstrap.rivalHost}:${bootstrap.rivalPort}`);
+    }
   });
 }
 /* Codigo Anterior Modificado

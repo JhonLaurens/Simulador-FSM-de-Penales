@@ -68,7 +68,8 @@ copy /Y "%~dp0README.md" "%DIST_DIR%\README.md" >nul
   echo.
   echo Para ejecutar:
   echo 1. Abrir esta carpeta.
-  echo 2. Hacer doble click en start.cmd.
+  echo 2. Para Portero: start.cmd portero
+  echo 3. Para Pateador: start.cmd pateador
   echo.
   echo No requiere instalar Node.js en la maquina destino.
   echo No mover archivos internos: node\, public\, node_modules\ y server.js son necesarios.
@@ -78,9 +79,10 @@ copy /Y "%~dp0README.md" "%DIST_DIR%\README.md" >nul
   echo Pateador FSM: http://localhost:5001
   echo.
   echo Para usar dos maquinas diferentes:
-  echo 1. Ejecute start.cmd en el equipo anfitrion.
-  echo 2. Copie de la consola los links con la IP de red.
-  echo 3. Abra el link del Portero en una maquina y el link del Pateador en otra.
+  echo 1. En el equipo del Portero ejecute: start.cmd portero
+  echo 2. Copie la IP de red que muestra la consola del Portero.
+  echo 3. En el equipo del Pateador ejecute: start.cmd pateador
+  echo 4. En la pantalla del Pateador ingrese la IP y puerto del Portero rival.
 ) > "%DIST_DIR%\LEEME_EJECUTAR.txt"
 
 echo.

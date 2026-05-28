@@ -13,11 +13,13 @@ Web app sencilla basada en el PDF del taller para simular tiros penales con una 
 
 ## Qué incluye
 
-- Servidor Node.js que sirve la interfaz web y mantiene el estado del juego.
+- Servidor de Defensa `Portero FSM` que escucha tiros por socket en `localhost:5000` o IP LAN.
+- Cliente de Ataque `Pateador FSM` que permite ingresar la IP y puerto del rival.
 - Comunicación por WebSocket para respetar el requisito de sockets.
 - Vista de `Portero FSM` para configurar las 12 posiciones del arquero.
 - Vista de `Pateador FSM` para enviar tiros, pruebas `AA/BB/CC` y ver respuestas.
 - Tablero 4x8 con marcas `P`, `T`, `G` y `~`.
+<!-- Codigo Anterior Modificado: - Servidor Node.js que sirve la interfaz web y mantiene el estado del juego. -->
 
 ## Cómo ejecutar
 
@@ -27,10 +29,36 @@ npm start
 ```
 
 <!-- JhonJara Modificacion -->
-Luego abre cada rol en su puerto:
+Para cumplir la arquitectura de dos programas de la rúbrica, ejecuta cada rol por separado.
+
+En el equipo del Portero:
+
+```bash
+npm run portero
+```
+
+Abre:
 
 - Portero FSM: `http://localhost:5000`
+
+En el equipo del Pateador:
+
+```bash
+npm run pateador
+```
+
+Abre:
+
 - Pateador FSM: `http://localhost:5001`
+
+En la pantalla del Pateador ingresa la IP y puerto del Portero rival. Para pruebas en el mismo equipo usa:
+
+- IP rival: `localhost`
+- Puerto rival: `5000`
+
+Si el Portero esta en otro equipo de la misma red, usa su IP LAN, por ejemplo `192.168.1.25` y puerto `5000`.
+
+`npm start` sigue disponible como demo local integrada con ambos roles.
 
 Puedes cambiar los puertos con variables de entorno:
 
@@ -38,7 +66,13 @@ Puedes cambiar los puertos con variables de entorno:
 $env:GOALKEEPER_PORT=5100; $env:SHOOTER_PORT=5101; npm start
 ```
 
-<!-- Codigo Anterior Modificado: Luego abre `http://localhost:5000`. -->
+Tambien puedes fijar el rival por defecto para el cliente:
+
+```powershell
+$env:RIVAL_HOST="192.168.1.25"; $env:RIVAL_PORT=5000; npm run pateador
+```
+
+<!-- Codigo Anterior Modificado: Luego abre cada rol en su puerto: Portero FSM: `http://localhost:5000`; Pateador FSM: `http://localhost:5001`. -->
 <!-- Fin de Modificacion -->
 
 Si PowerShell bloquea `npm.ps1`, usa alguna de estas alternativas:
@@ -121,10 +155,21 @@ No copies archivos sueltos. Debe copiarse completa la carpeta `FSM-Penales-Porta
 
 ## Flujo sugerido
 
-1. Conecta el panel `Portero FSM`.
+1. En el servidor, conecta el panel `Portero FSM`.
 2. Selecciona exactamente 12 casillas y pulsa `Configurar portero`.
-3. Conecta el panel `Pateador FSM`.
+3. En el cliente, escribe la IP/puerto rival y conecta el panel `Pateador FSM`.
 4. Envía tiros como `A1`, `B7`, `D3` o mensajes de prueba como `AA`.
+
+## Protocolo simple para otros equipos
+
+El `Portero FSM` tambien acepta mensajes WebSocket de texto plano para interoperar con otros equipos:
+
+- Cliente envia: `B7`
+- Servidor responde: `200:TAPO` o `202:GOL`
+- Cliente envia: `AA`, `BB`, `CC`
+- Servidor responde: `201:OK`
+- Cliente envia: `X9`
+- Servidor responde: `404:INVALIDO`
 
 ## Respuestas implementadas
 

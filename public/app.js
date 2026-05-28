@@ -24,6 +24,9 @@ const state = {
     connected: false,
     snapshot: createEmptySnapshot("penales-demo"),
     lastResponse: "Última respuesta: sin actividad todavía.",
+    // JhonJara Modificacion
+    pendingInput: "",
+    // Fin de Modificacion
   },
 };
 
@@ -34,6 +37,8 @@ const elements = {
   // JhonJara Modificacion
   activeRole: document.querySelector("#active-role"),
   rolePorts: document.querySelector("#role-ports"),
+  rivalHost: document.querySelector("#rival-host"),
+  rivalPort: document.querySelector("#rival-port"),
   // Fin de Modificacion
   goalkeeperTeam: document.querySelector("#goalkeeper-team"),
   goalkeeperSession: document.querySelector("#goalkeeper-session"),
@@ -126,12 +131,59 @@ function updateBadge(element, connected) {
   element.classList.toggle("is-live", connected);
 }
 
-function makeSocket(onMessage, onOpen, onClose) {
+// JhonJara Modificacion
+function parseSocketTarget(rawHost, rawPort) {
+  const fallbackPort = Number(rawPort || state.bootstrap.rivalPort || 5000) || 5000;
+  const cleanedHost = String(rawHost || state.bootstrap.rivalHost || "localhost")
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/^wss?:\/\//i, "")
+    .replace(/\/.*$/, "");
+
+  const parts = cleanedHost.split(":");
+  const host = (parts[0] || "localhost").trim();
+  const port = Number(parts[1] || fallbackPort) || fallbackPort;
+
+  return { host, port, target: `${host}:${port}` };
+}
+
+function getSocketTarget(role) {
+  if (role === "shooter") {
+    const parsed = parseSocketTarget(elements.rivalHost?.value, elements.rivalPort?.value);
+
+    if (elements.rivalHost) {
+      elements.rivalHost.value = parsed.host;
+    }
+
+    if (elements.rivalPort) {
+      elements.rivalPort.value = String(parsed.port);
+    }
+
+    return parsed.target;
+  }
+
+  return `${window.location.hostname || "localhost"}:${state.bootstrap.port}`;
+}
+
+function makeSocket(role, onMessage, onOpen, onClose) {
+// Codigo Anterior Modificado: function makeSocket(onMessage, onOpen, onClose) {
+// Fin de Modificacion
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   // JhonJara Modificacion
-  const wsHost = `${window.location.hostname || "localhost"}:${state.bootstrap.port}`;
-  const socket = new WebSocket(`${protocol}://${wsHost}/ws`);
-  // Codigo Anterior Modificado: const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
+  const wsHost = getSocketTarget(role);
+  let socket = null;
+
+  try {
+    socket = new WebSocket(`${protocol}://${wsHost}/ws`);
+  } catch {
+    if (role === "shooter") {
+      state.shooter.lastResponse = `IP o puerto inválido: ${wsHost}. Usa formato 10.2.12.129 y puerto 5000.`;
+      renderShooterResponse();
+    }
+
+    return null;
+  }
+  // Codigo Anterior Modificado: const socket = new WebSocket(`${protocol}://${window.location.hostname || "localhost"}:${state.bootstrap.port}/ws`);
   // Fin de Modificacion
 
   socket.addEventListener("open", onOpen);
@@ -139,10 +191,25 @@ function makeSocket(onMessage, onOpen, onClose) {
     try {
       onMessage(JSON.parse(event.data));
     } catch {
-      onMessage({ type: "alert", level: "warning", message: event.data });
+      // JhonJara Modificacion
+      if (role === "shooter" && isSimpleProtocolResponse(event.data)) {
+        handleSimpleShooterResponse(event.data);
+      } else {
+        onMessage({ type: "alert", level: "warning", message: event.data });
+      }
+      // Codigo Anterior Modificado: onMessage({ type: "alert", level: "warning", message: event.data });
+      // Fin de Modificacion
     }
   });
   socket.addEventListener("close", onClose);
+  // JhonJara Modificacion
+  socket.addEventListener("error", () => {
+    if (role === "shooter") {
+      state.shooter.lastResponse = `No fue posible conectar con ${wsHost}. Verifica IP, puerto y firewall.`;
+      renderShooterResponse();
+    }
+  });
+  // Fin de Modificacion
 
   return socket;
 }
@@ -156,6 +223,17 @@ function sendThrough(socket, payload) {
   return true;
 }
 
+// JhonJara Modificacion
+function sendPlainThrough(socket, message) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    return false;
+  }
+
+  socket.send(message);
+  return true;
+}
+// Fin de Modificacion
+
 function connectGoalkeeper() {
   const sessionId = normalizeSessionId(elements.goalkeeperSession.value);
   elements.goalkeeperSession.value = sessionId;
@@ -165,6 +243,7 @@ function connectGoalkeeper() {
   }
 
   const socket = makeSocket(
+    "goalkeeper",
     handleGoalkeeperMessage,
     () => {
       if (state.goalkeeper.ws !== socket) {
@@ -199,7 +278,14 @@ function connectShooter() {
     state.shooter.ws.close();
   }
 
+  const target = getSocketTarget("shooter");
+  state.shooter.connected = false;
+  updateBadge(elements.shooterConnection, false);
+  state.shooter.lastResponse = `Intentando conectar con Portero FSM rival en ws://${target}/ws ...`;
+  renderShooterResponse();
+
   const socket = makeSocket(
+    "shooter",
     handleShooterMessage,
     () => {
       if (state.shooter.ws !== socket) {
@@ -208,21 +294,59 @@ function connectShooter() {
 
       state.shooter.connected = true;
       updateBadge(elements.shooterConnection, true);
-      sendThrough(socket, {
-        type: "register",
-        role: "shooter",
-        sessionId,
-      });
+      state.shooter.snapshot = createEmptySnapshot(sessionId);
+      state.shooter.snapshot.coverageCount = 12;
+      state.shooter.snapshot.currentState = "q1";
+      state.shooter.snapshot.progressState = "q1";
+      state.shooter.lastResponse = `Conectado al Portero FSM rival en ${target}.`;
+      renderShooter();
+      renderShooterResponse();
+      // JhonJara Modificacion
+      // El cliente de ataque usa el protocolo simple de la rubrica contra apps externas.
+      // Codigo Anterior Modificado:
+      // sendThrough(socket, {
+      //   type: "register",
+      //   role: "shooter",
+      //   sessionId,
+      // });
+      // Fin de Modificacion
     },
     () => {
       if (state.shooter.ws !== socket) {
         return;
       }
 
+      const wasConnected = state.shooter.connected;
       state.shooter.connected = false;
       updateBadge(elements.shooterConnection, false);
+
+      if (wasConnected) {
+        state.shooter.lastResponse = `Desconectado del Portero FSM rival (${target}).`;
+        renderShooterResponse();
+      } else if (state.shooter.lastResponse.startsWith("Intentando conectar")) {
+        state.shooter.lastResponse = `No fue posible conectar con ${target}. Verifica IP, puerto, firewall y que el rival use WebSocket en /ws.`;
+        renderShooterResponse();
+      }
     },
   );
+
+  if (!socket) {
+    return;
+  }
+
+  const timeoutId = window.setTimeout(() => {
+    if (state.shooter.ws === socket && socket.readyState !== WebSocket.OPEN) {
+      socket.close();
+      state.shooter.connected = false;
+      updateBadge(elements.shooterConnection, false);
+      state.shooter.lastResponse = `No hubo respuesta de ${target}. Verifica que el Portero rival este encendido, que use WebSocket en /ws y que el firewall permita el puerto.`;
+      renderShooterResponse();
+    }
+  }, 5000);
+
+  socket.addEventListener("open", () => window.clearTimeout(timeoutId), { once: true });
+  socket.addEventListener("error", () => window.clearTimeout(timeoutId), { once: true });
+
   state.shooter.ws = socket;
 }
 
@@ -271,6 +395,92 @@ function handleShooterMessage(message) {
     renderShooterResponse();
   }
 }
+
+// JhonJara Modificacion
+function isValidCoordinate(value) {
+  const input = String(value || "").trim().toUpperCase();
+  return ROWS.includes(input.charAt(0)) && COLS.includes(input.slice(1));
+}
+
+function isSimpleProtocolResponse(value) {
+  return /^\d{3}:[A-Z_]+$/.test(String(value || "").trim().toUpperCase());
+}
+
+function updateSimpleShooterState(snapshot) {
+  if (snapshot.goals <= 0) {
+    snapshot.progressState = "q1";
+  } else if (snapshot.goals === 1) {
+    snapshot.progressState = "q2";
+  } else if (snapshot.goals === 2) {
+    snapshot.progressState = "q3";
+  } else {
+    snapshot.progressState = "q4";
+  }
+
+  if (snapshot.goals >= snapshot.goalLimit) {
+    snapshot.gameOver = true;
+    snapshot.terminalReason = "El pateador alcanzó 3 goles.";
+  } else if (snapshot.processedShots >= snapshot.shotLimit) {
+    snapshot.gameOver = true;
+    snapshot.terminalReason = "Se completaron los 5 tiros válidos.";
+  }
+
+  snapshot.currentState = snapshot.gameOver ? "q5" : snapshot.progressState;
+}
+
+function markSimpleShooterBoard(snapshot, input, mark) {
+  snapshot.shooterBoard = snapshot.shooterBoard.map((row) => ({
+    row: row.row,
+    cells: row.cells.map((cell) => (
+      cell.coord === input ? { ...cell, mark } : cell
+    )),
+  }));
+}
+
+function handleSimpleShooterResponse(rawResponse) {
+  const responseText = String(rawResponse || "").trim().toUpperCase();
+  const [codeText, label] = responseText.split(":");
+  const code = Number(codeText);
+  const input = state.shooter.pendingInput;
+  const snapshot = state.shooter.snapshot;
+
+  state.shooter.lastResponse = `Última respuesta: ${responseText}${input ? ` para ${input}` : ""}`;
+
+  if ((code === 200 || code === 202) && isValidCoordinate(input)) {
+    const mark = code === 200 ? "T" : "G";
+
+    markSimpleShooterBoard(snapshot, input, mark);
+    snapshot.processedShots += 1;
+    snapshot.remainingShots = Math.max(0, snapshot.shotLimit - snapshot.processedShots);
+
+    if (code === 200) {
+      snapshot.saves += 1;
+    } else {
+      snapshot.goals += 1;
+    }
+
+    snapshot.shotHistory.push({
+      turn: snapshot.processedShots,
+      input,
+      result: responseText,
+    });
+    snapshot.shotHistory = snapshot.shotHistory.slice(-10);
+    updateSimpleShooterState(snapshot);
+  }
+
+  if (code === 412) {
+    snapshot.coverageCount = 0;
+    snapshot.currentState = "q0";
+    snapshot.progressState = "q0";
+  } else {
+    snapshot.coverageCount = 12;
+  }
+
+  state.shooter.pendingInput = "";
+  renderShooter();
+  renderShooterResponse(label);
+}
+// Fin de Modificacion
 
 function boardLookup(board) {
   const map = new Map();
@@ -624,10 +834,21 @@ function sendShot(forcedValue = "") {
     return;
   }
 
-  const sent = sendThrough(state.shooter.ws, {
-    type: "shoot",
-    input,
-  });
+  // JhonJara Modificacion
+  if (state.shooter.snapshot.gameOver && isValidCoordinate(input)) {
+    state.shooter.lastResponse = "El shootout ya finalizó. Conecta de nuevo para iniciar otra prueba.";
+    renderShooterResponse();
+    return;
+  }
+
+  state.shooter.pendingInput = input;
+  const sent = sendPlainThrough(state.shooter.ws, input);
+  // Codigo Anterior Modificado:
+  // const sent = sendThrough(state.shooter.ws, {
+  //   type: "shoot",
+  //   input,
+  // });
+  // Fin de Modificacion
 
   if (!sent) {
     state.shooter.lastResponse = "Conecta primero el pateador para enviar tiros.";
@@ -652,6 +873,15 @@ async function loadBootstrap() {
   elements.defaultSession.textContent = state.bootstrap.defaultSession;
   elements.goalkeeperSession.value = state.bootstrap.defaultSession;
   elements.shooterSession.value = state.bootstrap.defaultSession;
+  // JhonJara Modificacion
+  if (elements.rivalHost) {
+    elements.rivalHost.value = state.bootstrap.rivalHost || "localhost";
+  }
+
+  if (elements.rivalPort) {
+    elements.rivalPort.value = String(state.bootstrap.rivalPort || 5000);
+  }
+  // Fin de Modificacion
 }
 
 // JhonJara Modificacion
